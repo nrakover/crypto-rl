@@ -46,6 +46,12 @@ class Candle:
         self.volume = volume
         self.window_size = window_size
 
+    def __str__(self):
+        return "[{0},{1},{2}]".format(self.timestamp, self.low, self.high)
+
+    def __repr__(self):
+        return self.__str__()
+
     @staticmethod
     def from_list(fields_list):
         '''

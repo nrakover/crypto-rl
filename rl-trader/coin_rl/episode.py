@@ -102,7 +102,8 @@ class Episode:
         start_date = Episode._parse_date(config.start)
         end_date = Episode._parse_date(config.end)
 
-        histories = [[]] * len(config.assets)
+        histories = [[] for _ in range(len(config.assets))]
+
         current_date = start_date
         while current_date < end_date:
             current_date_string = "{0}-{1}-{2}".format(current_date.year, current_date.month, current_date.day)

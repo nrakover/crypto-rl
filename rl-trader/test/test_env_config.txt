@@ -1,3 +1,4 @@
 test/test_exchange_data|2017-06-01|2017-06-2|BTC-USD|1|1:0
+test/test_exchange_data|2017-06-01|2017-06-2|BTC-USD,ETH-USD|1|1:0:0
 test/test_exchange_data|2017-06-01|2017-06-2|BTC-USD|1|0.25:0.75
 test/test_exchange_data|2017-06-01|2017-06-3|BTC-USD|1|1:0
