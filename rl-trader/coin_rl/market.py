@@ -84,11 +84,11 @@ def collate_multi_asset_history(histories, granularity=60):
     snapshots = []
 
     first_timestamp = max([h[0].timestamp for h in histories])
-    last_timestamp = min([h[-1].timestamp for h in histories])
+    max_timestamp = min([h[-1].timestamp for h in histories])
 
     asset_indices = [0] * num_assets
     current_timestamp = first_timestamp
-    while current_timestamp <= last_timestamp:
+    while current_timestamp <= max_timestamp:
         asset_candles = []
         for asset in range(num_assets):
             asset_history = histories[asset]
@@ -106,6 +106,6 @@ def collate_multi_asset_history(histories, granularity=60):
             asset_candles.append(interpolated_candle)
 
         snapshots.append(Snapshot(current_timestamp, asset_candles))
-        current_timestamp = min(current_timestamp + granularity, max(last_timestamp, current_timestamp+1))
+        current_timestamp = current_timestamp + granularity
 
     return snapshots
