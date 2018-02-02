@@ -143,6 +143,16 @@ class Config:
         self.step_size = step_size
         self.starting_allocation = starting_allocation
 
+    def __str__(self):
+        settings_list = []
+        settings_list.append(self.root_dir)
+        settings_list.append(self.start)
+        settings_list.append(self.end)
+        settings_list.append(Config.ASSETS_DELIMITER.join(self.assets))
+        settings_list.append(str(self.step_size))
+        settings_list.append(Config.ALLOCATION_DELIMITER.join([str(a) for a in self.starting_allocation]))
+        return Config.SETTING_DELIMITER.join(settings_list)
+
     @staticmethod
     def parse(config_string):
         assert isinstance(config_string, str)
