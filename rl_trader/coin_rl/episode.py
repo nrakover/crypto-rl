@@ -17,6 +17,8 @@ class Episode:
     Specified by a segment of market history, a starting asset allocation, and a step size.
     '''
 
+    MAX_EXCHANGE_TRANSACTION_FEE = 0.003
+
     def __init__(self, history, starting_allocation, step_size):
         self.history = history
         self.starting_allocation = starting_allocation
@@ -52,8 +54,10 @@ class Episode:
         post_act_allocation = self._do_action(pre_act_allocation, action)
 
         next_t = self.t + self.step_size
-        post_market_allocation, reward = self._compute_portfolio_change(
+        growth_scaled_allocation = self._compute_portfolio_change(
             post_act_allocation, self.history[self.t], self.history[next_t])
+        post_market_allocation = self._normalize_allocation(growth_scaled_allocation)
+        reward = self._compute_reward(growth_scaled_allocation)
         self.t = next_t
         self.allocation = post_market_allocation
         new_state = State.create(self.history, self.t, self.allocation)
@@ -67,35 +71,46 @@ class Episode:
         new_allocation[0] = allocation[0] # init with base currency allocation
 
         # process sales
-        for asset_indx in range(len(sell)):
-            amount_sold = allocation[asset_indx + 1] * sell[asset_indx]
+        for (asset_indx, fraction_sold) in enumerate(sell):
+            amount_sold = allocation[asset_indx + 1] * fraction_sold
             remaining = allocation[asset_indx + 1] - amount_sold
+            proceeds_post_exchange_fee = amount_sold * (1.0 - Episode.MAX_EXCHANGE_TRANSACTION_FEE)
 
-            new_allocation[0] += amount_sold            # update base currency amount
-            new_allocation[asset_indx + 1] = remaining  # set remaining asset amount
+            new_allocation[0] += proceeds_post_exchange_fee # update base currency amount
+            new_allocation[asset_indx + 1] = remaining      # set remaining asset amount
 
         # process purchases
         pre_buy_base_currency_amount = new_allocation[0]    # redistribute the base currency post sales
         new_allocation[0] = 0
-        for asset_indx in range(len(buy)):
-            new_allocation[asset_indx] += pre_buy_base_currency_amount * buy[asset_indx]
+        for (asset_indx, fraction_bought) in enumerate(buy):
+            if asset_indx == 0:
+                new_allocation[asset_indx] += pre_buy_base_currency_amount * fraction_bought
+            else:   # adjust for exchange fees when buying assets
+                new_allocation[asset_indx] += pre_buy_base_currency_amount * fraction_bought * (1.0 - Episode.MAX_EXCHANGE_TRANSACTION_FEE)
 
         return new_allocation
 
     @staticmethod
     def _compute_portfolio_change(allocation, starting_market_snapshot, ending_market_snapshot):
         growth_scaled_allocation = []
-        for asset_indx in range(len(allocation)):
+        for (asset_indx, asset_allocation) in enumerate(allocation):
             starting_value = starting_market_snapshot.get_asset_value(asset_indx)
             ending_value = ending_market_snapshot.get_asset_value(asset_indx)
             growth_factor = ending_value / starting_value
 
-            growth_scaled_allocation.append(allocation[asset_indx] * growth_factor)
+            growth_scaled_allocation.append(asset_allocation * growth_factor)
+
+        return growth_scaled_allocation
+
+    @staticmethod
+    def _normalize_allocation(allocation):
+        total = sum(allocation)
+        return [v/total for v in allocation]
         
+    @staticmethod
+    def _compute_reward(growth_scaled_allocation):
         net_growth = sum(growth_scaled_allocation)
-        new_allocation = [value/net_growth for value in growth_scaled_allocation] # normalize
-        
-        return new_allocation, math.log(net_growth) # reward is the log of the net growth factor
+        return math.log(net_growth) # reward is the log of the net growth factor
     
     @staticmethod
     def build(config):
