@@ -3,14 +3,16 @@ API for agent-environment interactions.
 '''
 
 from . import episode
+from ..utils import metrics
 
 class Env:
     '''
     Abstraction for the environment an RL agent interacts with.
     '''
 
-    def __init__(self, config):
+    def __init__(self, config, metrics_logger=metrics.EmptyLogger()):
         self.episode_configurations = config.get_episodes()
+        self.metrics_logger = metrics_logger
 
         # init environment state
         self.episode_counter = 0
@@ -21,6 +23,7 @@ class Env:
         Returns the starting state of an episode.
         '''
         self.current_episode = episode.Episode.build(self.episode_configurations[self.episode_counter])
+        self.metrics_logger.new_episode(self.current_episode)
         return self.current_episode.reset()
 
     def step(self, action):
@@ -37,6 +40,9 @@ class Env:
         '''
         assert self.current_episode is not None
         state, reward, terminal = self.current_episode.step(action)
+
+        # log for metrics
+        self.metrics_logger.log_reward(reward)
 
         # handle end of episode
         if terminal:
