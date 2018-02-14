@@ -46,6 +46,9 @@ class MetricsLogger:
         _, rewards = self.episodes[-1]
         rewards.append(reward)
 
+    def clear(self):
+        self.episodes.clear()
+
 class EmptyLogger(MetricsLogger):
     def new_episode(self, episode):
         pass

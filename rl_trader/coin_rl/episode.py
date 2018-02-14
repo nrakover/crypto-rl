@@ -31,7 +31,7 @@ class Episode:
         '''
         Returns the starting state of the episode.
         '''
-        self.t = State.find_starting_timestep(self.history)
+        self.t = State.get_starting_timestep()
         self.allocation = self.starting_allocation[:]
         return State.create(self.history, self.t, self.allocation)
 

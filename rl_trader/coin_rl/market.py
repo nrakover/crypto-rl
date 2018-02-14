@@ -18,6 +18,12 @@ class Snapshot:
         '''
         return self.timestamp
 
+    def get_num_assets(self):
+        return len(self.asset_candles)
+    
+    def get_asset_candle(self, i):
+        return self.asset_candles[i]
+
     def get_asset_value(self, asset_index):
         '''
         Returns the asset's market value.
