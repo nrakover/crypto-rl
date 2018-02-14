@@ -124,7 +124,7 @@ class Episode:
             current_date_string = "{0}-{1}-{2}".format(current_date.year, current_date.month, current_date.day)
             for (asset_indx, asset) in enumerate(config.assets):
                 bucket_path = os.path.join(config.root_dir, asset, current_date_string) + '.csv'
-                assert os.path.exists(bucket_path)
+                assert os.path.isfile(bucket_path), "'{}' does not exist".format(bucket_path)
                 with open(bucket_path, 'r') as bucket_file:
                     reader = csv.reader(bucket_file)
                     for line in reader:

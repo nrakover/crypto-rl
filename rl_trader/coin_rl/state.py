@@ -32,7 +32,7 @@ class State:
     @staticmethod
     def _compute_features(history, timestep, allocation):
         features = []
-        for t in range(timestep, timestep + State.NUM_SNAPSHOTS_IN_STATE_WINDOW):
+        for t in range(timestep, timestep - State.NUM_SNAPSHOTS_IN_STATE_WINDOW, -1):
             snapshot = history[t]
             for asset_indx in range(snapshot.get_num_assets()):
                 candle = snapshot.get_asset_candle(asset_indx)

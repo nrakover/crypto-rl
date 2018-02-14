@@ -86,7 +86,7 @@ class PGNetwork:
         Z = tf.matmul(W, A) + b
 
         # output layer
-        Y = tf.stack([tf.nn.sigmoid(Z[0:num_assets, :]), tf.nn.softmax(Z[num_assets:, :])])
+        Y = tf.concat([tf.nn.sigmoid(Z[0:num_assets, :]), tf.nn.softmax(Z[num_assets:, :])], axis=0)
 
         return X, Y, params
 
