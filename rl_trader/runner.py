@@ -10,7 +10,7 @@ from .coin_rl.policy_gradient import PGNetwork
 
 from .utils.metrics import MetricsLogger
 
-def train(env_config, num_assets, num_iterations, network_layers, discount_gamma=0.999, verbose=True):
+def train(env_config, num_assets, num_iterations, network_layers, discount_gamma=0.999, verbose=True, tracemalloc=None):
     # init PG network
     policy = PGNetwork(num_assets, network_layers, discount_gamma)
     # init agent
@@ -49,6 +49,11 @@ def train(env_config, num_assets, num_iterations, network_layers, discount_gamma
 
             if verbose:
                 print("finished episode {}".format(len(logger.episodes)))
+            if tracemalloc is not None:
+                snapshot = tracemalloc.take_snapshot()
+                stats = snapshot.statistics("lineno")
+                for stat in stats[0:3]:
+                    print(stat)
 
         # update agent parameters
         if verbose:
