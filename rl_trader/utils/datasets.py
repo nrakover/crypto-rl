@@ -33,12 +33,9 @@ def generate_train_test_configurations(root_dir, train_step_size, test_step_size
         list of test episode configrations
     '''
     total_span = (end_date - start_date).days
-    test_block_size = round(total_span * test_block_fraction)
-    valid_start_indices = total_span - (test_block_size + MIN_EPISODE_LENGTH)
-    
-    test_block_start_index = random.randint(0, valid_start_indices)
-    test_block_end_index = test_block_start_index + test_block_size
+    test_block_size = min(round(total_span * test_block_fraction), MIN_EPISODE_LENGTH)
 
+    test_block_start_index, test_block_end_index = _get_test_block_indices(total_span, test_block_size)
     test_block_start_date = dt.date.fromordinal(start_date.toordinal() + test_block_start_index)
     test_block_end_date = dt.date.fromordinal(start_date.toordinal() + test_block_end_index)
 
@@ -59,6 +56,21 @@ def generate_train_test_configurations(root_dir, train_step_size, test_step_size
     train_configs.extend(upper_train_block_configs)
 
     return train_configs, test_configs
+
+def _get_test_block_indices(total_span, test_block_size):
+    valid_start_indices = total_span - test_block_size - 2 * (MIN_EPISODE_LENGTH - 1)
+
+    start = random.randint(0, valid_start_indices)
+    # adjust lower end -- if 0th index then keep in place, otherwise shift up to leave
+    # enought space below for a full episode
+    if start > 0 and start < total_span - test_block_size - (MIN_EPISODE_LENGTH - 1):
+        start += (MIN_EPISODE_LENGTH - 1)
+    elif start > 0:
+        start = total_span - test_block_size
+
+    end = start + test_block_size
+
+    return start, end
 
 def generate_random_configurations(root_dir, step_size, start_date, end_date, assets, num_episodes):
     '''
