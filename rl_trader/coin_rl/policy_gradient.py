@@ -43,9 +43,14 @@ class PGNetwork:
             discounted_rewards = self._compute_discounted_rewards(rewards, self.discount_gamma)
             for (i, (s, a, _)) in enumerate(path):
                 states.append(s.get_features())
-                actions.append(a)
+                actions.append( a[0] + a[1] )
                 advantages.append(discounted_rewards[i])
-        return np.stack(states, axis=1).squeeze(), np.array(actions).reshape((-1, len(actions))), np.array(advantages)
+
+        m = len(states)
+        states_tensor = np.stack(states, axis=1).reshape((-1, m))
+        actions_tensor = np.array(actions).reshape((-1, m))
+        advantages_tensor = np.array(advantages).reshape((1, m))
+        return states_tensor, actions_tensor, advantages_tensor
 
     @staticmethod
     def _compute_discounted_rewards(rewards, discount_gamma):
