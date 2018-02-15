@@ -39,18 +39,18 @@ class MetricsLogger:
     def __init__(self):
         self.episodes = []
 
-    def new_episode(self, episode):
-        self.episodes.append((episode, []))
+    def new_episode(self):
+        self.episodes.append([])
 
     def log_reward(self, reward):
-        _, rewards = self.episodes[-1]
+        rewards = self.episodes[-1]
         rewards.append(reward)
 
     def clear(self):
         self.episodes.clear()
 
 class EmptyLogger(MetricsLogger):
-    def new_episode(self, episode):
+    def new_episode(self):
         pass
 
     def log_reward(self, reward):

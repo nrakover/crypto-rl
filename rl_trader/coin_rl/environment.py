@@ -23,7 +23,7 @@ class Env:
         Returns the starting state of an episode.
         '''
         self.current_episode = episode.Episode.build(self.episode_configurations[self.episode_counter])
-        self.metrics_logger.new_episode(self.current_episode)
+        self.metrics_logger.new_episode()
         return self.current_episode.reset()
 
     def step(self, action):
