@@ -47,10 +47,16 @@ def train(env_config, num_assets, num_iterations, network_layers, discount_gamma
 
             paths.append(current_path)
 
+            if verbose:
+                print("finished episode {}".format(len(logger.episodes)))
+
         # update agent parameters
+        if verbose:
+            print(">>>>>>>> updating policy")
         cost = policy.take_gradient_step(paths)
 
         if verbose:
-            print ("Iteration {0}:  cost = {1}".format(iteration, cost))
+            print("Iteration {0}:  cost = {1}".format(iteration, cost))
+            print("---------------------------------")
 
     return policy
