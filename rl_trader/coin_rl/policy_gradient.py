@@ -27,9 +27,16 @@ class PGNetwork:
         states, sell_actions, buy_actions, advantages = self._get_observations(paths)
         num_observations = states.shape[1]
         print("using {} observations".format(num_observations))
-        _, score = self.sess.run([self.train_op, self.U],
-                feed_dict={self.X: states, self.target_sell: sell_actions, self.target_buy: buy_actions, self.R: advantages})
-        return score/num_observations
+        mini_batches = _get_mini_batches(states, sell_actions, buy_actions, advantages)
+        print("{0} mini-batches".format(len(mini_batches)))
+
+        for batch in mini_batches:
+            mini_X, mini_Y_sell, mini_Y_buy, mini_R = batch
+            self.sess.run(self.train_op, feed_dict={
+                self.X: mini_X, self.target_sell: mini_Y_sell,
+                self.target_buy: mini_Y_buy, self.R: mini_R
+                })
+        return np.mean(advantages)
 
     def _get_observations(self, paths):
         states = []
@@ -51,6 +58,43 @@ class PGNetwork:
         buy_actions_tensor = np.array(buy_actions).reshape((-1, m))
         advantages_tensor = np.array(advantages).reshape((1, m))
         return states_tensor, sell_actions_tensor, buy_actions_tensor, advantages_tensor
+
+def _get_mini_batches(states, sell_actions, buy_actions, advantages, mini_batch_size=32):
+    m = states.shape[1]
+    indices = np.arange(m)
+    np.random.shuffle(indices)
+
+    # shuffle
+    states = states[:, indices]
+    sell_actions = sell_actions[:, indices]
+    buy_actions = buy_actions[:, indices]
+    advantages = advantages[:, indices]
+
+    # break up into batches
+    batches = []
+    num_full_batches = int(m/mini_batch_size)
+    for i in range(num_full_batches):
+        mini_states = _get_indexed_mini_batch(states, mini_batch_size, i)
+        mini_sell_actions = _get_indexed_mini_batch(sell_actions, mini_batch_size, i)
+        mini_buy_actions = _get_indexed_mini_batch(buy_actions, mini_batch_size, i)
+        mini_advantages = _get_indexed_mini_batch(advantages, mini_batch_size, i)
+
+        mini_batch = (mini_states, mini_sell_actions, mini_buy_actions, mini_advantages)
+        batches.append(mini_batch)
+
+    if m % mini_batch_size != 0:
+        mini_states = states[:, mini_batch_size * num_full_batches:]
+        mini_sell_actions = sell_actions[:, mini_batch_size * num_full_batches:]
+        mini_buy_actions = buy_actions[:, mini_batch_size * num_full_batches:]
+        mini_advantages = advantages[:, mini_batch_size * num_full_batches:]
+
+        last_batch = (mini_states, mini_sell_actions, mini_buy_actions, mini_advantages)
+        batches.append(last_batch)
+
+    return batches
+
+def _get_indexed_mini_batch(array, mini_batch_size, batch_index):
+    return array[:, mini_batch_size * batch_index : mini_batch_size * (batch_index + 1)]
 
 def _compute_discounted_rewards(rewards, discount_gamma):
     num_rewards = len(rewards)
@@ -101,7 +145,6 @@ def _build_network(num_assets, layers):
 def _compute_log_utility(Y_sell, Y_buy, target_sell, target_buy, R):
     log_sell_probs = _log_sell_probs(Y_sell, target_sell)
     log_buy_probs = _log_buy_probs(Y_buy, target_buy)
-    assert tf.shape(log_sell_probs) == tf.shape(log_buy_probs)
 
     log_target_probs = log_sell_probs + log_buy_probs
     advantage_weighted_log_probs = tf.multiply(R, log_target_probs)

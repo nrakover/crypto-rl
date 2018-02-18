@@ -58,10 +58,10 @@ def train(env_config, num_assets, num_iterations, network_layers, discount_gamma
         # update agent parameters
         if verbose:
             print(">>>>>>>> updating policy")
-        cost = policy.take_gradient_step(paths)
+        avg_advantage = policy.take_gradient_step(paths)
 
         if verbose:
-            print("Iteration {0}:  cost = {1}".format(iteration, cost))
+            print("Iteration {0}:  avg advantage = {1}".format(iteration, avg_advantage))
             print("---------------------------------")
 
     return policy
