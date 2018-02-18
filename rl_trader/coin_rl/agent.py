@@ -23,30 +23,24 @@ class StochasticAgent:
         return (sells, buys)
 
     def sample_action_on_policy(self, state):
-        action_distribution = self.policy.forward(state)
+        sell_dist, buy_dist = self.policy.forward(state)
         sampled_sells = []
         for i in range(self.num_assets):
-            policy_threshold = action_distribution[i, 0]
+            policy_threshold = sell_dist[i, 0]
             if random.random() < policy_threshold:
                 sampled_sells.append(1.0)
             else:
                 sampled_sells.append(0.0)
 
         sampled_buys = [0.0] * (self.num_assets + 1)
-        asset_to_buy = self._choose_weighted(action_distribution[self.num_assets+1::, :])
+        asset_to_buy = self._choose_weighted(buy_dist)
         sampled_buys[asset_to_buy] = 1.0
 
         return (sampled_sells, sampled_buys)
 
     def get_best_action(self, state):
-        distribution = self.policy.forward(state)
-        return self._distribution_to_action(distribution, self.num_assets)
-
-    @staticmethod
-    def _distribution_to_action(distribution, num_assets):
-        sells = distribution[0:num_assets, 0].tolist()
-        buys = distribution[num_assets::, 0].tolist()
-        return (sells, buys)
+        sell, buy = self.policy.forward(state)
+        return sell.squeeze().tolist(), buy.squeeze().tolist()
 
     @staticmethod
     def _choose_weighted(distribution):
