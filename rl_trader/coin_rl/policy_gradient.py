@@ -9,15 +9,32 @@ EPSILON = 1e-10
 
 class PGNetwork:
 
-    def __init__(self, num_assets, layers, discount_gamma=0.999):
+    def __init__(self, session, num_assets, layers, discount_gamma=0.999, is_clone=False):
+        self.sess = session
         self.num_assets = num_assets
+        self.layers = layers
         self.discount_gamma = discount_gamma
 
-        self.X, self.Y_sell, self.Y_buy, self.target_sell, self.target_buy, self.R, self.U, self.train_op = _build_network(num_assets, layers)
+        with tf.variable_scope('clone' if is_clone else 'default', reuse=(tf.AUTO_REUSE if is_clone else None)):
+            self.X, self.Y_sell, self.Y_buy,\
+                self.target_sell, self.target_buy, self.R,\
+                self.U, self.train_op, self.params = _build_network(num_assets, layers)
 
-        self.sess = tf.Session()
+    @staticmethod
+    def clone(pg_net):
+        clone_net = PGNetwork(pg_net.sess, pg_net.num_assets, pg_net.layers, pg_net.discount_gamma, is_clone=True)
+        clone_net._assign_params(pg_net.params)
+        return clone_net
+
+    def initialize(self):
         init = tf.global_variables_initializer()
         self.sess.run(init)
+
+    def _assign_params(self, param_values):
+        assignments = []
+        for (p_name, p) in param_values.items():
+            assignments.append(tf.assign(self.params[p_name], p))
+        self.sess.run(assignments)
 
     def forward(self, state):
         sell, buy = self.sess.run([self.Y_sell, self.Y_buy], feed_dict={self.X: state.get_features()})
@@ -113,10 +130,14 @@ def _build_network(num_assets, layers):
     X = tf.placeholder(tf.float32, shape=[X_n, None], name='X')
 
     # hidden layers
+    params = {}
     A = X
     for l in range(1, L):
         W = tf.get_variable('w' + str(l), shape=[layers[l], layers[l-1]], dtype=tf.float32)
         b = tf.get_variable('b' + str(l), shape=[layers[l], 1], dtype=tf.float32)
+
+        params['W' + str(l)] = W
+        params['b' + str(l)] = b
 
         Z = tf.matmul(W, A) + b
         A = tf.nn.relu(Z)
@@ -125,6 +146,8 @@ def _build_network(num_assets, layers):
     Y_n = 2 * num_assets + 1
     W = tf.get_variable('W' + str(L), shape=[Y_n, layers[-1]], dtype=tf.float32)
     b = tf.get_variable('b' + str(L), shape=[Y_n, 1], dtype=tf.float32)
+    params['W' + str(L)] = W
+    params['b' + str(L)] = b
     Z = tf.matmul(W, A) + b
 
     # output layer
@@ -140,7 +163,7 @@ def _build_network(num_assets, layers):
     optimizer = tf.train.AdamOptimizer()
     train_op = optimizer.minimize(cost)
 
-    return X, Y_sell, Y_buy, target_sell, target_buy, R, U, train_op
+    return X, Y_sell, Y_buy, target_sell, target_buy, R, U, train_op, params
 
 def _compute_log_utility(Y_sell, Y_buy, target_sell, target_buy, R):
     log_sell_probs = _log_sell_probs(Y_sell, target_sell)
