@@ -30,6 +30,11 @@ class State:
         return State(history[timestep], allocation, State._compute_features(history, timestep, allocation))
 
     @staticmethod
+    def get_num_features(num_assets):
+        # num features per candle * num assets * num snapshots in window + allocation size
+        return 5 * num_assets * State.NUM_SNAPSHOTS_IN_STATE_WINDOW + (num_assets + 1)
+
+    @staticmethod
     def _compute_features(history, timestep, allocation):
         features = []
         for t in range(timestep, timestep - State.NUM_SNAPSHOTS_IN_STATE_WINDOW, -1):
@@ -38,6 +43,7 @@ class State:
                 candle = snapshot.get_asset_candle(asset_indx)
                 features.extend(State._get_candle_features(candle))
         features.extend(allocation)
+        assert len(features) == State.get_num_features(history[timestep].get_num_assets()), "Mismatch between actual and expected feature vector size!"
         return np.array(features, dtype=np.float).reshape((-1, 1))
 
     @staticmethod
