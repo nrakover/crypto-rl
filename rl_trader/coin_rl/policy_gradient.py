@@ -38,6 +38,8 @@ class PGNetwork:
 
     def forward(self, state):
         sell, buy = self.sess.run([self.Y_sell, self.Y_buy], feed_dict={self.X: state.get_features()})
+        sell = np.round(sell, decimals=5)
+        buy = np.round(buy, decimals=5)
         return (sell, buy)
 
     def take_gradient_step(self, paths):
