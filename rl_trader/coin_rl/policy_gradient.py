@@ -152,7 +152,7 @@ def _build_network(num_assets, layers):
 
     # output layer
     Y_sell = tf.nn.sigmoid(Z[0:num_assets, :])
-    Y_buy = tf.nn.softmax(Z[num_assets:, :])
+    Y_buy = tf.nn.softmax(Z[num_assets:, :], axis=0)
 
     # cost function
     target_sell = tf.placeholder(tf.float32, shape=Y_sell.shape)

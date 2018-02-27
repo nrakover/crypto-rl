@@ -10,6 +10,8 @@ import os
 from . import market
 from .state import State
 
+EPSILON = 1e-10
+
 class Episode:
     '''
     Abstraction for a single executable RL episode.
@@ -66,12 +68,14 @@ class Episode:
 
     @staticmethod
     def _do_action(allocation, action):
+        assert _approximately_equivalent(1.0, sum(allocation)), "Bad allocation: " + str(allocation)
         (sell, buy) = action
         new_allocation = [0] * len(allocation)
         new_allocation[0] = allocation[0] # init with base currency allocation
 
         # process sales
         for (asset_indx, fraction_sold) in enumerate(sell):
+            assert fraction_sold >= 0 and fraction_sold <= 1.0
             amount_sold = allocation[asset_indx + 1] * fraction_sold
             remaining = allocation[asset_indx + 1] - amount_sold
             proceeds_post_exchange_fee = amount_sold * (1.0 - Episode.MAX_EXCHANGE_TRANSACTION_FEE)
@@ -82,12 +86,15 @@ class Episode:
         # process purchases
         pre_buy_base_currency_amount = new_allocation[0]    # redistribute the base currency post sales
         new_allocation[0] = 0
+        assert _approximately_equivalent(1.0, sum(buy)), "Bad buy action: " + str(buy)
         for (asset_indx, fraction_bought) in enumerate(buy):
+            assert fraction_bought >= 0 and fraction_bought <= 1.0
             if asset_indx == 0:
                 new_allocation[asset_indx] += pre_buy_base_currency_amount * fraction_bought
             else:   # adjust for exchange fees when buying assets
                 new_allocation[asset_indx] += pre_buy_base_currency_amount * fraction_bought * (1.0 - Episode.MAX_EXCHANGE_TRANSACTION_FEE)
 
+        assert sum(new_allocation) <= 1.0 + EPSILON, "Bug in post-action allocation calculation: new allocation total is " + str(sum(new_allocation))
         return new_allocation
 
     @staticmethod
@@ -181,3 +188,6 @@ class Config:
         starting_allocation = [float(x) for x in settings[5].split(Config.ALLOCATION_DELIMITER)]
 
         return Config(root_dir, start, end, assets, step_size, starting_allocation)
+
+def _approximately_equivalent(x1, x2):
+    return abs(x1 - x2) < EPSILON
