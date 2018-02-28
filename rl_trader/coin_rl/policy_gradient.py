@@ -9,20 +9,21 @@ EPSILON = 1e-10
 
 class PGNetwork:
 
-    def __init__(self, session, num_assets, layers, discount_gamma=0.999, is_clone=False):
+    def __init__(self, session, num_assets, layers, discount_gamma=0.999, learning_rate=0.001, is_clone=False):
         self.sess = session
         self.num_assets = num_assets
         self.layers = layers
         self.discount_gamma = discount_gamma
+        self.learning_rate = learning_rate
 
         with tf.variable_scope('clone' if is_clone else 'default', reuse=(tf.AUTO_REUSE if is_clone else None)):
             self.X, self.Y_sell, self.Y_buy,\
                 self.target_sell, self.target_buy, self.R,\
-                self.U, self.train_op, self.params = _build_network(num_assets, layers)
+                self.U, self.train_op, self.params = _build_network(num_assets, layers, learning_rate)
 
     @staticmethod
     def clone(pg_net):
-        clone_net = PGNetwork(pg_net.sess, pg_net.num_assets, pg_net.layers, pg_net.discount_gamma, is_clone=True)
+        clone_net = PGNetwork(pg_net.sess, pg_net.num_assets, pg_net.layers, pg_net.discount_gamma, pg_net.learning_rate, is_clone=True)
         clone_net._assign_params(pg_net.params)
         return clone_net
 
@@ -78,7 +79,7 @@ class PGNetwork:
         advantages_tensor = np.array(advantages).reshape((1, m))
         return states_tensor, sell_actions_tensor, buy_actions_tensor, advantages_tensor
 
-def _get_mini_batches(states, sell_actions, buy_actions, advantages, mini_batch_size=32):
+def _get_mini_batches(states, sell_actions, buy_actions, advantages, mini_batch_size=64):
     m = states.shape[1]
     indices = np.arange(m)
     np.random.shuffle(indices)
@@ -124,7 +125,7 @@ def _compute_discounted_rewards(rewards, discount_gamma):
     discounted.reverse()
     return discounted
 
-def _build_network(num_assets, layers):
+def _build_network(num_assets, layers, learning_rate):
     L = len(layers)
 
     # input layer
@@ -162,7 +163,7 @@ def _build_network(num_assets, layers):
     R = tf.placeholder(tf.float32, shape=[1, None])
     U = _compute_log_utility(Y_sell, Y_buy, target_sell, target_buy, R)
     cost = -U
-    optimizer = tf.train.AdamOptimizer()
+    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
     train_op = optimizer.minimize(cost)
 
     return X, Y_sell, Y_buy, target_sell, target_buy, R, U, train_op, params

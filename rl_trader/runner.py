@@ -13,10 +13,10 @@ from .coin_rl.policy_gradient import PGNetwork
 
 from .utils.metrics import MetricsLogger
 
-def train(env_config, num_assets, num_iterations, network_layers, discount_gamma=0.999, target_buffer_size=32000, eval_frequency=0, verbose=True, tracemalloc=None, num_malloc_stats=5):
+def train(env_config, num_assets, num_iterations, network_layers, discount_gamma=0.999, learning_rate=0.001, target_buffer_size=32000, eval_frequency=0, verbose=True, tracemalloc=None, num_malloc_stats=5):
     # init PG network
     sess = tf.Session()
-    policy = PGNetwork(sess, num_assets, network_layers, discount_gamma)
+    policy = PGNetwork(sess, num_assets, network_layers, discount_gamma, learning_rate)
     policy.initialize()
 
     # establish performance baseline
