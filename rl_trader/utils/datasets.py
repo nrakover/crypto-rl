@@ -29,11 +29,11 @@ def generate_train_test_configurations(root_dir, train_step_size, test_step_size
         test_block_fraction (float in (0,1)) size of the test block as a fraction of total range
 
     Returns:
-        list of train episode condifurations
-        list of test episode configrations
+        list of train episode configurations
+        list of test episode configurations
     '''
     total_span = (end_date - start_date).days
-    test_block_size = min(round(total_span * test_block_fraction), MIN_EPISODE_LENGTH)
+    test_block_size = max(round(total_span * test_block_fraction), MIN_EPISODE_LENGTH)
 
     test_block_start_index, test_block_end_index = _get_test_block_indices(total_span, test_block_size)
     test_block_start_date = dt.date.fromordinal(start_date.toordinal() + test_block_start_index)
@@ -85,7 +85,7 @@ def generate_random_configurations(root_dir, step_size, start_date, end_date, as
         num_episodes        (integer) number of episodes to generate
 
     Returns:
-        list of episode condifurations
+        list of episode configurations
     '''
     ranges = generate_episode_ranges(start_date, end_date, num_episodes)
     allocations = generate_random_allocations(len(assets), num_episodes)
