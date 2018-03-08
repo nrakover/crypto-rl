@@ -40,7 +40,7 @@ class StochasticAgent:
 
     def get_best_action(self, state):
         sell, buy = self.policy.forward(state)
-        return sell.squeeze().tolist(), buy.squeeze().tolist()
+        return sell.squeeze(axis=1).tolist(), buy.squeeze(axis=1).tolist()
 
     @staticmethod
     def _choose_weighted(distribution):
